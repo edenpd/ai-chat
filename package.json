@@ -1,0 +1,39 @@
+{
+  "name": "ngx-gen-ai-chat",
+  "version": "1.0.0",
+  "description": "A premium, glassmorphic Generative AI Chat UI for Angular with Cohere integration.",
+  "author": "AI Chat Team",
+  "keywords": [
+    "angular",
+    "ai",
+    "gen-ai",
+    "chat",
+    "cohere",
+    "glassmorphism",
+    "rtl",
+    "ui"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@angular/common": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^21.0.0",
+    "@angular/core": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^21.0.0",
+    "@angular/animations": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^21.0.0",
+    "@angular/platform-browser": "^17.0.0 || ^18.0.0 || ^19.0.0 || ^21.0.0",
+    "@ngrx/signals": "^17.0.0 || ^18.0.0 || ^21.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false,
+  "module": "fesm2022/ngx-gen-ai-chat.mjs",
+  "typings": "types/ngx-gen-ai-chat.d.ts",
+  "exports": {
+    "./package.json": {
+      "default": "./package.json"
+    },
+    ".": {
+      "types": "./types/ngx-gen-ai-chat.d.ts",
+      "default": "./fesm2022/ngx-gen-ai-chat.mjs"
+    }
+  }
+}
