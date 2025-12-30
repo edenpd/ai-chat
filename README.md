@@ -109,11 +109,19 @@ export class MyComponent {
   private chatStore = inject(AiChatStore);
 
   clearChat() {
+    // Option 1: Clear and reset to default start message
     this.chatStore.clearChat();
+
+    // Option 2: Clear and provide a custom restart message
+    this.chatStore.clearChat('The chat has been reset. How can I help you now?');
   }
 
   toggleChat() {
     this.chatStore.toggleChat();
+  }
+  
+  stopGeneration() {
+    this.chatStore.stopRequest();
   }
 }
 ```

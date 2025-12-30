@@ -1,5 +1,5 @@
 import * as i0 from '@angular/core';
-import { Injectable, computed, inject, effect, ViewChild, ViewEncapsulation, Component, signal, Input } from '@angular/core';
+import { Injectable, computed, inject, effect, ViewChild, ViewEncapsulation, Component, signal, HostListener, Input } from '@angular/core';
 import { Subject } from 'rxjs';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
 import { CommonModule } from '@angular/common';
@@ -298,7 +298,20 @@ const AiChatStore = signalStore({ providedIn: 'root' }, withState(initialState),
         },
         toggleChat: () => patchState(store, { isOpen: !store.isOpen() }),
         setIsOpen: (isOpen) => patchState(store, { isOpen }),
-        clearChat: () => patchState(store, { messages: [] }),
+        clearChat(initialMessage) {
+            this.stopRequest();
+            const messages = [];
+            const finalInitialMessage = initialMessage || store.startMessage();
+            if (finalInitialMessage) {
+                messages.push({
+                    type: 'assistant',
+                    content: finalInitialMessage,
+                    id: crypto.randomUUID(),
+                    timestamp: new Date()
+                });
+            }
+            patchState(store, { messages });
+        },
         stopRequest() {
             if (msgSubscription) {
                 msgSubscription.unsubscribe();
@@ -342,7 +355,7 @@ const AiChatStore = signalStore({ providedIn: 'root' }, withState(initialState),
                     if (err.name === 'AbortError' || err.message?.toLowerCase().includes('abort'))
                         return;
                     console.error('[AiChatStore] Chat Error:', err);
-                    appendToAssistantMsg(assistantMsgId, '\n[Error]');
+                    appendToAssistantMsg(assistantMsgId, '\n❌ אירעה שגיאה בעיבוד הבקשה. נסה שוב.');
                     updateAssistantMsg(assistantMsgId, { isTyping: false });
                     patchState(store, { isProcessing: false });
                 },
@@ -419,17 +432,17 @@ class MessageListComponent {
                     <img 
                       [src]="store.userPhoto()" 
                       alt="User"
-                      class="w-10 h-10 rounded-full ring-2 ring-black/10 dark:ring-white/20 shadow-md"
+                      class="w-10 h-10 rounded-full ring-2 ring-black/10 ai-dark:ring-white/20 shadow-md"
                     />
                 </div>
-                <div class="max-w-[80%] bg-white dark:bg-gradient-to-br dark:from-neural-600 dark:to-neural-700 rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg border border-black/5 dark:border-transparent">
-                  <p class="text-gray-800 dark:text-white whitespace-pre-wrap">{{ message.content }}</p>
-                  <p class="text-xs text-gray-500 dark:text-neural-300 mt-2 opacity-70">{{ formatTime(message.timestamp) }}</p>
+                <div class="max-w-[80%] bg-white ai-dark:bg-gradient-to-br ai-dark:from-neural-600 ai-dark:to-neural-700 rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg border border-black/5 ai-dark:border-transparent">
+                  <p class="text-gray-800 ai-dark:text-white whitespace-pre-wrap">{{ message.content }}</p>
+                  <p class="text-xs text-gray-500 ai-dark:text-neural-300 mt-2 opacity-70">{{ formatTime(message.timestamp) }}</p>
                 </div>
               </div>
             } @else if (message.isTyping && !message.content) {
               <div class="flex gap-3 w-full justify-end">
-                <div class="inline-block bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
+                <div class="inline-block bg-white ai-dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 ai-dark:border-white/5">
                   <div class="flex gap-1.5">
                     <div class="w-2.5 h-2.5 rounded-full bg-synapse-400 animate-bounce" style="animation-delay: 0ms"></div>
                     <div class="w-2.5 h-2.5 rounded-full bg-neural-400 animate-bounce" style="animation-delay: 150ms"></div>
@@ -444,9 +457,9 @@ class MessageListComponent {
               </div>
             } @else {
               <div class="flex gap-3 w-full justify-end">
-                <div class="max-w-[85%] bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
+                <div class="max-w-[85%] bg-white ai-dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 ai-dark:border-white/5">
                   <div 
-                    class="text-gray-800 dark:text-gray-100 whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none"
+                    class="text-gray-800 ai-dark:text-gray-100 whitespace-pre-wrap prose prose-sm ai-dark:prose-invert max-w-none"
                     [innerHTML]="formatMessage(message.content)"
                   ></div>
                   <p class="text-xs text-gray-500 mt-3">{{ formatTime(message.timestamp) }}</p>
@@ -461,7 +474,7 @@ class MessageListComponent {
           </div>
         } @empty {
           <div class="flex flex-col items-center justify-center h-full py-20 text-center">
-            <div class="w-20 h-20 rounded-2xl bg-black/5 dark:bg-neural-500/20 flex items-center justify-center mb-6">
+            <div class="w-20 h-20 rounded-2xl bg-black/5 ai-dark:bg-neural-500/20 flex items-center justify-center mb-6">
               <span class="text-4xl">💬</span>
             </div>
             <h3 class="text-xl font-semibold mb-2 gradient-text">{{ store.emptyChatTitle() }}</h3>
@@ -488,17 +501,17 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
                     <img 
                       [src]="store.userPhoto()" 
                       alt="User"
-                      class="w-10 h-10 rounded-full ring-2 ring-black/10 dark:ring-white/20 shadow-md"
+                      class="w-10 h-10 rounded-full ring-2 ring-black/10 ai-dark:ring-white/20 shadow-md"
                     />
                 </div>
-                <div class="max-w-[80%] bg-white dark:bg-gradient-to-br dark:from-neural-600 dark:to-neural-700 rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg border border-black/5 dark:border-transparent">
-                  <p class="text-gray-800 dark:text-white whitespace-pre-wrap">{{ message.content }}</p>
-                  <p class="text-xs text-gray-500 dark:text-neural-300 mt-2 opacity-70">{{ formatTime(message.timestamp) }}</p>
+                <div class="max-w-[80%] bg-white ai-dark:bg-gradient-to-br ai-dark:from-neural-600 ai-dark:to-neural-700 rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg border border-black/5 ai-dark:border-transparent">
+                  <p class="text-gray-800 ai-dark:text-white whitespace-pre-wrap">{{ message.content }}</p>
+                  <p class="text-xs text-gray-500 ai-dark:text-neural-300 mt-2 opacity-70">{{ formatTime(message.timestamp) }}</p>
                 </div>
               </div>
             } @else if (message.isTyping && !message.content) {
               <div class="flex gap-3 w-full justify-end">
-                <div class="inline-block bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
+                <div class="inline-block bg-white ai-dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 ai-dark:border-white/5">
                   <div class="flex gap-1.5">
                     <div class="w-2.5 h-2.5 rounded-full bg-synapse-400 animate-bounce" style="animation-delay: 0ms"></div>
                     <div class="w-2.5 h-2.5 rounded-full bg-neural-400 animate-bounce" style="animation-delay: 150ms"></div>
@@ -513,9 +526,9 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
               </div>
             } @else {
               <div class="flex gap-3 w-full justify-end">
-                <div class="max-w-[85%] bg-white dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 dark:border-white/5">
+                <div class="max-w-[85%] bg-white ai-dark:bg-deep-800/60 backdrop-blur-xl rounded-2xl rounded-tl-sm px-5 py-4 shadow-lg border border-black/5 ai-dark:border-white/5">
                   <div 
-                    class="text-gray-800 dark:text-gray-100 whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none"
+                    class="text-gray-800 ai-dark:text-gray-100 whitespace-pre-wrap prose prose-sm ai-dark:prose-invert max-w-none"
                     [innerHTML]="formatMessage(message.content)"
                   ></div>
                   <p class="text-xs text-gray-500 mt-3">{{ formatTime(message.timestamp) }}</p>
@@ -530,7 +543,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
           </div>
         } @empty {
           <div class="flex flex-col items-center justify-center h-full py-20 text-center">
-            <div class="w-20 h-20 rounded-2xl bg-black/5 dark:bg-neural-500/20 flex items-center justify-center mb-6">
+            <div class="w-20 h-20 rounded-2xl bg-black/5 ai-dark:bg-neural-500/20 flex items-center justify-center mb-6">
               <span class="text-4xl">💬</span>
             </div>
             <h3 class="text-xl font-semibold mb-2 gradient-text">{{ store.emptyChatTitle() }}</h3>
@@ -548,8 +561,14 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
 class MessageInputComponent {
     store = inject(AiChatStore);
     inputField;
+    suggestionsWrapper;
     inputValue = signal('', ...(ngDevMode ? [{ debugName: "inputValue" }] : []));
     showSuggestions = signal(false, ...(ngDevMode ? [{ debugName: "showSuggestions" }] : []));
+    onClickOutside(event) {
+        if (this.showSuggestions() && this.suggestionsWrapper && !this.suggestionsWrapper.nativeElement.contains(event.target)) {
+            this.showSuggestions.set(false);
+        }
+    }
     constructor() {
         effect(() => {
             if (!this.store.isProcessing()) {
@@ -586,7 +605,7 @@ class MessageInputComponent {
         }
     }
     static ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "21.0.6", ngImport: i0, type: MessageInputComponent, deps: [], target: i0.ɵɵFactoryTarget.Component });
-    static ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "21.0.6", type: MessageInputComponent, isStandalone: true, selector: "ai-message-input", viewQueries: [{ propertyName: "inputField", first: true, predicate: ["inputField"], descendants: true }], ngImport: i0, template: `
+    static ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "21.0.6", type: MessageInputComponent, isStandalone: true, selector: "ai-message-input", host: { listeners: { "document:click": "onClickOutside($event)" } }, viewQueries: [{ propertyName: "inputField", first: true, predicate: ["inputField"], descendants: true }, { propertyName: "suggestionsWrapper", first: true, predicate: ["suggestionsWrapper"], descendants: true }], ngImport: i0, template: `
     <div class="max-w-4xl mx-auto">
       <form (submit)="onSubmit($event)" class="relative">
         <div class="relative group">
@@ -594,7 +613,7 @@ class MessageInputComponent {
             class="absolute -inset-1 bg-gradient-to-r from-neural-500/20 via-synapse-500/20 to-matrix-500/20 rounded-2xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"
           ></div>
           
-          <div class="relative flex items-end gap-3 bg-white dark:bg-deep-700/50 rounded-2xl border border-black/10 dark:border-white/10 focus-within:border-neural-500/50 transition-all duration-300 p-2 shadow-lg">
+           <div class="relative flex items-end gap-3 bg-white ai-dark:bg-deep-700/50 rounded-2xl border border-black/10 ai-dark:border-white/10 focus-within:border-neural-500/50 transition-all duration-300 p-2 shadow-lg">
             
             <div class="flex-1 relative">
               <textarea
@@ -605,19 +624,19 @@ class MessageInputComponent {
                 [readonly]="store.isProcessing()"
                 (keydown)="onKeyDown($event)"
                 rows="1"
-                class="w-full bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 px-4 py-3 max-h-32 min-h-[48px]"
+                class="w-full bg-transparent border-none outline-none resize-none text-gray-900 ai-dark:text-white placeholder-gray-400 ai-dark:placeholder-gray-500 px-4 py-3 max-h-32 min-h-[48px]"
                 [class.opacity-50]="store.isProcessing()"
                 [class.cursor-not-allowed]="store.isProcessing()"
               ></textarea>
             </div>
 
             <div class="flex items-center gap-2 pb-2 pl-2">
-              <div class="relative">
+              <div class="relative" #suggestionsWrapper>
               @if (store.questionSuggestions().length > 0) {
                 <button 
                   type="button"
                   (click)="showSuggestions.set(!showSuggestions())"
-                  class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-neural-600 dark:hover:text-white"
+                  class="p-2 rounded-lg hover:bg-black/5 ai-dark:hover:bg-white/10 transition-colors text-gray-400 ai-dark:text-gray-500 hover:text-neural-600 ai-dark:hover:text-white"
                   title="שאלות לדוגמה"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -628,9 +647,9 @@ class MessageInputComponent {
               }
                 @if (showSuggestions()) {
                   <div 
-                    class="absolute bottom-full left-0 mb-2 w-72 bg-white dark:bg-deep-800/80 backdrop-blur-xl rounded-xl border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden z-10"
+                    class="absolute bottom-full left-0 mb-2 w-72 bg-white ai-dark:bg-deep-800/80 backdrop-blur-xl rounded-xl border border-black/10 ai-dark:border-white/10 shadow-2xl overflow-hidden z-10"
                   >
-                    <div class="p-3 border-b border-black/5 dark:border-white/10 bg-slate-50 dark:bg-transparent">
+                    <div class="p-3 border-b border-black/5 ai-dark:border-white/10 bg-slate-50 ai-dark:bg-transparent">
                       <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">שאלות לדוגמה</p>
                     </div>
                     <div class="p-2 space-y-1">
@@ -638,7 +657,7 @@ class MessageInputComponent {
                         <button
                           type="button"
                           (click)="useSuggestion(suggestion)"
-                          class="w-full text-right px-3 py-2 rounded-lg text-sm hover:bg-neural-50 dark:hover:bg-white/10 transition-colors text-gray-600 dark:text-gray-300 hover:text-neural-600 dark:hover:text-white"
+                          class="w-full text-right px-3 py-2 rounded-lg text-sm hover:bg-neural-50 ai-dark:hover:bg-white/10 transition-colors text-gray-600 ai-dark:text-gray-300 hover:text-neural-600 ai-dark:hover:text-white"
                         >
                           {{ suggestion }}
                         </button>
@@ -681,15 +700,15 @@ class MessageInputComponent {
 
         <div class="flex justify-between items-center mt-2 px-2">
           <p class="text-xs text-gray-400">
-            <kbd class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-400">Enter</kbd>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/5 ai-dark:bg-white/5 border border-black/10 ai-dark:border-white/10 text-gray-400">Enter</kbd>
             לשליחה 
-            <kbd class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-400 mr-2">Shift+Enter</kbd>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/5 ai-dark:bg-white/5 border border-black/10 ai-dark:border-white/10 text-gray-400 mr-2">Shift+Enter</kbd>
             לשורה חדשה
           </p>
           
           @if (store.isProcessing()) {
-            <p class="text-xs text-synapse-500 dark:text-synapse-400 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-synapse-500 dark:bg-synapse-400 animate-pulse"></span>
+            <p class="text-xs text-synapse-500 ai-dark:text-synapse-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-synapse-500 ai-dark:bg-synapse-400 animate-pulse"></span>
               מעבד בקשה...
             </p>
           }
@@ -708,7 +727,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
             class="absolute -inset-1 bg-gradient-to-r from-neural-500/20 via-synapse-500/20 to-matrix-500/20 rounded-2xl blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"
           ></div>
           
-          <div class="relative flex items-end gap-3 bg-white dark:bg-deep-700/50 rounded-2xl border border-black/10 dark:border-white/10 focus-within:border-neural-500/50 transition-all duration-300 p-2 shadow-lg">
+           <div class="relative flex items-end gap-3 bg-white ai-dark:bg-deep-700/50 rounded-2xl border border-black/10 ai-dark:border-white/10 focus-within:border-neural-500/50 transition-all duration-300 p-2 shadow-lg">
             
             <div class="flex-1 relative">
               <textarea
@@ -719,19 +738,19 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
                 [readonly]="store.isProcessing()"
                 (keydown)="onKeyDown($event)"
                 rows="1"
-                class="w-full bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 px-4 py-3 max-h-32 min-h-[48px]"
+                class="w-full bg-transparent border-none outline-none resize-none text-gray-900 ai-dark:text-white placeholder-gray-400 ai-dark:placeholder-gray-500 px-4 py-3 max-h-32 min-h-[48px]"
                 [class.opacity-50]="store.isProcessing()"
                 [class.cursor-not-allowed]="store.isProcessing()"
               ></textarea>
             </div>
 
             <div class="flex items-center gap-2 pb-2 pl-2">
-              <div class="relative">
+              <div class="relative" #suggestionsWrapper>
               @if (store.questionSuggestions().length > 0) {
                 <button 
                   type="button"
                   (click)="showSuggestions.set(!showSuggestions())"
-                  class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-gray-400 dark:text-gray-500 hover:text-neural-600 dark:hover:text-white"
+                  class="p-2 rounded-lg hover:bg-black/5 ai-dark:hover:bg-white/10 transition-colors text-gray-400 ai-dark:text-gray-500 hover:text-neural-600 ai-dark:hover:text-white"
                   title="שאלות לדוגמה"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -742,9 +761,9 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
               }
                 @if (showSuggestions()) {
                   <div 
-                    class="absolute bottom-full left-0 mb-2 w-72 bg-white dark:bg-deep-800/80 backdrop-blur-xl rounded-xl border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden z-10"
+                    class="absolute bottom-full left-0 mb-2 w-72 bg-white ai-dark:bg-deep-800/80 backdrop-blur-xl rounded-xl border border-black/10 ai-dark:border-white/10 shadow-2xl overflow-hidden z-10"
                   >
-                    <div class="p-3 border-b border-black/5 dark:border-white/10 bg-slate-50 dark:bg-transparent">
+                    <div class="p-3 border-b border-black/5 ai-dark:border-white/10 bg-slate-50 ai-dark:bg-transparent">
                       <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">שאלות לדוגמה</p>
                     </div>
                     <div class="p-2 space-y-1">
@@ -752,7 +771,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
                         <button
                           type="button"
                           (click)="useSuggestion(suggestion)"
-                          class="w-full text-right px-3 py-2 rounded-lg text-sm hover:bg-neural-50 dark:hover:bg-white/10 transition-colors text-gray-600 dark:text-gray-300 hover:text-neural-600 dark:hover:text-white"
+                          class="w-full text-right px-3 py-2 rounded-lg text-sm hover:bg-neural-50 ai-dark:hover:bg-white/10 transition-colors text-gray-600 ai-dark:text-gray-300 hover:text-neural-600 ai-dark:hover:text-white"
                         >
                           {{ suggestion }}
                         </button>
@@ -795,15 +814,15 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
 
         <div class="flex justify-between items-center mt-2 px-2">
           <p class="text-xs text-gray-400">
-            <kbd class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-400">Enter</kbd>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/5 ai-dark:bg-white/5 border border-black/10 ai-dark:border-white/10 text-gray-400">Enter</kbd>
             לשליחה 
-            <kbd class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-gray-400 mr-2">Shift+Enter</kbd>
+            <kbd class="px-1.5 py-0.5 rounded bg-black/5 ai-dark:bg-white/5 border border-black/10 ai-dark:border-white/10 text-gray-400 mr-2">Shift+Enter</kbd>
             לשורה חדשה
           </p>
           
           @if (store.isProcessing()) {
-            <p class="text-xs text-synapse-500 dark:text-synapse-400 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-synapse-500 dark:bg-synapse-400 animate-pulse"></span>
+            <p class="text-xs text-synapse-500 ai-dark:text-synapse-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-synapse-500 ai-dark:bg-synapse-400 animate-pulse"></span>
               מעבד בקשה...
             </p>
           }
@@ -814,6 +833,12 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
         }], ctorParameters: () => [], propDecorators: { inputField: [{
                 type: ViewChild,
                 args: ['inputField']
+            }], suggestionsWrapper: [{
+                type: ViewChild,
+                args: ['suggestionsWrapper']
+            }], onClickOutside: [{
+                type: HostListener,
+                args: ['document:click', ['$event']]
             }] } });
 
 class ChatWindowComponent {
@@ -825,7 +850,7 @@ class ChatWindowComponent {
         <ai-message-list />
       </div>
       
-      <div class="border-t border-black/5 dark:border-white/5 p-4 bg-slate-200/50 dark:bg-deep-800/50 transition-colors duration-300">
+      <div class="border-t border-black/5 ai-dark:border-white/5 p-4 bg-slate-200/50 ai-dark:bg-deep-800/50 transition-colors duration-300">
         <ai-message-input />
       </div>
     </div>
@@ -839,7 +864,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
         <ai-message-list />
       </div>
       
-      <div class="border-t border-black/5 dark:border-white/5 p-4 bg-slate-200/50 dark:bg-deep-800/50 transition-colors duration-300">
+      <div class="border-t border-black/5 ai-dark:border-white/5 p-4 bg-slate-200/50 ai-dark:bg-deep-800/50 transition-colors duration-300">
         <ai-message-input />
       </div>
     </div>
@@ -852,7 +877,7 @@ class ChatButtonComponent {
     static ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "14.0.0", version: "21.0.6", type: ChatButtonComponent, isStandalone: true, selector: "ai-chat-button", ngImport: i0, template: `
     <button
       (click)="store.toggleChat()"
-      class="w-16 h-16 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group relative ring-4 ring-white/10 dark:ring-black/20 overflow-hidden"
+      class="w-16 h-16 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group relative ring-4 ring-white/10 ai-dark:ring-black/20 overflow-hidden"
       [attr.aria-label]="store.isOpen() ? 'סגור צאט' : 'פתח צאט'"
     >
       <div class="absolute inset-0 rounded-full bg-synapse-400 opacity-20 group-hover:animate-ping"></div>
@@ -894,7 +919,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
             args: [{ selector: 'ai-chat-button', standalone: true, imports: [CommonModule], template: `
     <button
       (click)="store.toggleChat()"
-      class="w-16 h-16 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group relative ring-4 ring-white/10 dark:ring-black/20 overflow-hidden"
+      class="w-16 h-16 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group relative ring-4 ring-white/10 ai-dark:ring-black/20 overflow-hidden"
       [attr.aria-label]="store.isOpen() ? 'סגור צאט' : 'פתח צאט'"
     >
       <div class="absolute inset-0 rounded-full bg-synapse-400 opacity-20 group-hover:animate-ping"></div>
@@ -942,10 +967,10 @@ class AiChatComponent {
     }
     static ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "21.0.6", ngImport: i0, type: AiChatComponent, deps: [], target: i0.ɵɵFactoryTarget.Component });
     static ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "21.0.6", type: AiChatComponent, isStandalone: true, selector: "ai-chat", inputs: { config: "config" }, ngImport: i0, template: `
-    <div [class.dark]="store.isDarkMode()" class="h-full flex flex-col">
+    <div [class.ai-chat-dark]="store.isDarkMode()" class="h-full flex flex-col">
       @if (store.mode() === 'embedded') {
         <div 
-          class="h-full min-h-0 bg-slate-50 dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300 rounded-inherit"
+          class="h-full min-h-0 bg-slate-50 ai-dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300 rounded-inherit"
         >
           <ai-chat-window class="flex-1 min-h-0" />
         </div>
@@ -957,17 +982,17 @@ class AiChatComponent {
               @popoverScale
               [style.width]="store.width()"
               [style.height]="store.height()"
-              class="max-h-[calc(100vh-120px)] bg-white dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
+              class="max-h-[calc(100vh-120px)] bg-white ai-dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 ai-dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
             >
               <!-- Popover Header -->
-              <div class="p-4 border-b border-black/5 dark:border-white/5 bg-gradient-to-r from-synapse-500/10 to-neural-500/10 flex items-center justify-between">
+              <div class="p-4 border-b border-black/5 ai-dark:border-white/5 bg-gradient-to-r from-synapse-500/10 to-neural-500/10 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center">
                     <span class="text-sm">🤖</span>
                   </div>
-                  <span class="font-semibold text-gray-800 dark:text-white">{{ store.title() }}</span>
+                  <span class="font-semibold text-gray-800 ai-dark:text-white">{{ store.title() }}</span>
                 </div>
-                <button (click)="store.toggleChat()" class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-gray-500 transition-colors">
+                <button (click)="store.toggleChat()" class="p-2 hover:bg-black/5 ai-dark:hover:bg-white/5 rounded-full text-gray-500 transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1015,10 +1040,10 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
                             ])
                         ])
                     ], template: `
-    <div [class.dark]="store.isDarkMode()" class="h-full flex flex-col">
+    <div [class.ai-chat-dark]="store.isDarkMode()" class="h-full flex flex-col">
       @if (store.mode() === 'embedded') {
         <div 
-          class="h-full min-h-0 bg-slate-50 dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300 rounded-inherit"
+          class="h-full min-h-0 bg-slate-50 ai-dark:bg-deep-900 bg-mesh-gradient flex flex-col overflow-hidden transition-colors duration-300 rounded-inherit"
         >
           <ai-chat-window class="flex-1 min-h-0" />
         </div>
@@ -1030,17 +1055,17 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.0.6", ngImpor
               @popoverScale
               [style.width]="store.width()"
               [style.height]="store.height()"
-              class="max-h-[calc(100vh-120px)] bg-white dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
+              class="max-h-[calc(100vh-120px)] bg-white ai-dark:bg-deep-900 rounded-3xl shadow-2xl overflow-hidden border border-black/5 ai-dark:border-white/10 flex flex-col pointer-events-auto origin-bottom-left"
             >
               <!-- Popover Header -->
-              <div class="p-4 border-b border-black/5 dark:border-white/5 bg-gradient-to-r from-synapse-500/10 to-neural-500/10 flex items-center justify-between">
+              <div class="p-4 border-b border-black/5 ai-dark:border-white/5 bg-gradient-to-r from-synapse-500/10 to-neural-500/10 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-gradient-to-br from-synapse-500 to-neural-500 flex items-center justify-center">
                     <span class="text-sm">🤖</span>
                   </div>
-                  <span class="font-semibold text-gray-800 dark:text-white">{{ store.title() }}</span>
+                  <span class="font-semibold text-gray-800 ai-dark:text-white">{{ store.title() }}</span>
                 </div>
-                <button (click)="store.toggleChat()" class="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-gray-500 transition-colors">
+                <button (click)="store.toggleChat()" class="p-2 hover:bg-black/5 ai-dark:hover:bg-white/5 rounded-full text-gray-500 transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>

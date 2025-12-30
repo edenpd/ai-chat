@@ -117,7 +117,7 @@ declare const AiChatStore: _angular_core.Type<{
     toggleTheme: () => void;
     toggleChat: () => void;
     setIsOpen: (isOpen: boolean) => void;
-    clearChat: () => void;
+    clearChat: (initialMessage?: string) => void;
     stopRequest: () => void;
     processMessage: (content: string) => Promise<void>;
     initialize: () => void;
@@ -176,7 +176,7 @@ declare class AiChatComponent implements OnInit {
         toggleTheme: () => void;
         toggleChat: () => void;
         setIsOpen: (isOpen: boolean) => void;
-        clearChat: () => void;
+        clearChat: (initialMessage?: string) => void;
         stopRequest: () => void;
         processMessage: (content: string) => Promise<void>;
         initialize: () => void;
